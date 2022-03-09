@@ -1,4 +1,4 @@
-<?php
+<?php /** @noinspection PhpUnused */
 
 namespace Doap\Client;
 
@@ -12,12 +12,10 @@ class Builder
      * @var array
      */
     private $body;
-
     /**
      * @var array
      */
     private $parameters;
-
     /**
      * @var int
      */
@@ -34,11 +32,14 @@ class Builder
      * @var false $disableSSL
      */
     private $disableSSL;
-
     /**
      * @var boolean
      */
     private $showOutputHeader;
+    /**
+     * @var ContentType
+     */
+    private $contentType;
 
     public function __construct($url)
     {
@@ -86,8 +87,14 @@ class Builder
         return $this;
     }
 
-    public function enableOutputHeader($enable = true) {
+    public function enableOutputHeader($enable = true): Builder {
         $this->showOutputHeader = $enable;
+        return $this;
+    }
+
+    public function setContentType(ContentType $contentType): Builder {
+        $this->contentType = $contentType;
+        return $this;
     }
 
     public function build(): Request {
@@ -95,8 +102,12 @@ class Builder
             $this->url .= "?" . http_build_query($this->parameters);
         }
         $ch = curl_init($this->url);
+        if (!is_null($this->contentType)) {
+            $this->header[] = strval($this->contentType);
+        }
         if (!empty($this->body)) {
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $this->body);
+            $content = $this->contentType instanceof ContentTypeJson ? json_encode($this->body) : http_build_query($this->body);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $content);
         }
         foreach ($this->options as $key => $value) {
             curl_setopt($ch, $key, $value);
